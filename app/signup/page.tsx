@@ -1,16 +1,75 @@
 "use client"
 
 import { Reveal } from "@/components/animation/Reveal"
-import { Sparkles, User, Mail, Lock, ArrowRight } from "lucide-react";
+import { Sparkles, User, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import React, { useState } from "react";
 import Loader from "@/components/Loader";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+type SignupForm = {
+    fullName: string;
+    email: string;
+    password: string;
+}
 
 export default function Signup() {
 
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState<SignupForm>({
+        fullName: "",
+        email: "",
+        password: ""
+    });
+    const router = useRouter();
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        })
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log(formData);
+        setError(null);
+
+        if (formData.password.length < 6) {
+            setError("Password must be at least 6 characters.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    name: formData.fullName,
+                    email: formData.email,
+                    password: formData.password
+                })
+            });
+
+            const data = await res.json();
+            console.log(data);
+            setLoading(false);
+            if (res.ok) {
+                router.push("/onboarding");
+                router.refresh();
+            }
+
+        } catch (error) {
+            console.log(error)
+            setLoading(false);
+        }
+    }
 
     return (
         <main className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#020817] text-slate-900 dark:text-slate-50 p-4 selection:bg-blue-500/30 overflow-hidden relative">
@@ -44,7 +103,21 @@ export default function Signup() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5, type: "spring" }}
                     >
-                        <form action="#" className="relative space-y-6">
+                        <form onSubmit={handleSubmit} className="relative space-y-6">
+
+                            {
+                                error && (
+                                    <motion.div
+                                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    className="flex items-start gap-3 rounded-xl border border-red-200/50 bg-red-50/80 px-4 py-3.5 text-sm font-medium text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400 backdrop-blur-md"
+                                >
+                                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                                    <p className="leading-relaxed">{error}</p>
+                                </motion.div>
+                                )
+                            }
+
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2" htmlFor="name">
                                     Full Name
@@ -56,7 +129,9 @@ export default function Signup() {
                                     <input
                                         type="text"
                                         id="name"
-                    
+                                        name="fullName"
+                                        value={formData.fullName}
+                                        onChange={handleChange}
                                         className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-950/50 dark:text-white transition-all backdrop-blur-sm placeholder-slate-400 dark:placeholder-slate-600"
                                         placeholder="John Doe"
                                         
@@ -75,6 +150,9 @@ export default function Signup() {
                                     <input
                                         type="email"
                                         id="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-950/50 dark:text-white transition-all backdrop-blur-sm placeholder-slate-400 dark:placeholder-slate-600"
                                         placeholder="you@domain.com"
                                     />
@@ -92,6 +170,9 @@ export default function Signup() {
                                     <input
                                         type="password"
                                         id="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
                                         className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-950/50 dark:text-white transition-all backdrop-blur-sm placeholder-slate-400 dark:placeholder-slate-600"
                                         placeholder="At least 6 characters"
                                     />
